@@ -10,13 +10,31 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
                       #endif
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
-                       )
+                       ),
+        apvts (*this, nullptr, "Parameters", createParameterLayout())
 {
 }
 
 AudioPluginAudioProcessor::~AudioPluginAudioProcessor()
 {
 }
+
+juce::AudioProcessorValueTreeState::ParameterLayout
+AudioPluginAudioProcessor::createParameterLayout()
+{
+    juce::AudioProcessorValueTreeState::ParameterLayout layout;
+
+    layout.add (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { "gain", 1 },
+        "Gain",
+        juce::NormalisableRange<float> (-60.0f, 12.0f, 0.1f),
+        0.0f));
+
+    return layout;
+}
+
+
+
 
 //==============================================================================
 const juce::String AudioPluginAudioProcessor::getName() const
@@ -130,7 +148,8 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
 
-    const float gain = juce::Decibels::decibelsToGain (0.0f);
+    const float gainDb = apvts.getRawParameterValue ("gain")->load();
+    const float gain = juce::Decibels::decibelsToGain(gainDb);
 
     // In case we have more outputs than inputs, this code clears any output
     // channels that didn't contain input data, (because these aren't
